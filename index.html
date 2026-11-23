@@ -1,0 +1,1031 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="light" data-size="medium" data-font="standard">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartRevision</title>
+    <style>
+        :root {
+            --app-bg: #112017;
+            --card-bg: #f4f3e8;
+            --inner-box-bg: #eae8d4;
+            --text-main: #0c1a12;
+            --text-muted: #61685c;
+            --accent-green: #173f27;
+            --text-light: #ffffff;
+            --color-good: #173f27;
+            --color-bad: #a63a1b;
+            --color-gold: #e5c158;
+            --font-base: 15px;
+            --font-stack: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+        html[data-theme="dark"] {
+            --app-bg: #0b130e;
+            --card-bg: #192720;
+            --inner-box-bg: #22342b;
+            --text-main: #f4f3e8;
+            --text-muted: #9fa79b;
+            --text-light: #ffffff;
+        }
+        html[data-size="small"]  { --font-base: 13px; }
+        html[data-size="medium"] { --font-base: 15px; }
+        html[data-size="large"]  { --font-base: 17px; }
+        html[data-size="xlarge"] { --font-base: 19px; }
+        html[data-font="dyslexic"] {
+            --font-stack: "Comic Sans MS", sans-serif;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+        body {
+            background-color: var(--app-bg);
+            color: var(--text-main);
+            font-family: var(--font-stack);
+            font-size: var(--font-base);
+            line-height: 1.35;
+            padding: 56px 10px 64px 10px;
+            min-height: 100dvh;
+        }
+        .view-zone { display: none; }
+        .view-zone.active { display: block; }
+        .app-view { display: none; }
+        .app-view.active { display: flex; flex-direction: column; gap: 8px; }
+        .hidden { display: none !important; }
+
+        .app-header {
+            position: fixed; top: 0; left: 0; right: 0; height: 48px;
+            background-color: rgba(17, 32, 23, 0.96);
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 0 12px; z-index: 100;
+            border-bottom: 1px solid rgba(244, 243, 232, 0.12);
+        }
+        .app-header h1 { color: var(--card-bg); font-size: 1.05rem; font-weight: 800; cursor: pointer; }
+        .btn-toggle {
+            background-color: var(--card-bg); color: var(--accent-green);
+            border: none; padding: 5px 11px; border-radius: 16px;
+            font-size: 0.78rem; font-weight: bold; cursor: pointer;
+        }
+
+        h2 { color: var(--card-bg); font-size: 1.15rem; margin-top: 2px; }
+        h3 { color: var(--card-bg); font-size: 1rem; margin-top: 4px; }
+
+        .grid-courses { display: flex; flex-direction: column; gap: 8px; }
+        .course-card {
+            background-color: var(--card-bg); border-radius: 14px;
+            padding: 12px 14px; display: flex; justify-content: space-between;
+            align-items: center; cursor: pointer; gap: 8px;
+        }
+
+        .quiz-status-card {
+            background-color: var(--card-bg); border-radius: 14px; padding: 9px 11px;
+        }
+        .status-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+        .participant-info { display: flex; align-items: baseline; gap: 6px; }
+        .participant-name { font-size: 0.95rem; font-weight: 900; color: var(--text-main); }
+        .participant-label { font-size: 0.6rem; letter-spacing: 0.8px; color: var(--text-muted); font-weight: 800; }
+        .status-timer {
+            background-color: var(--accent-green); color: var(--text-light);
+            font-size: 0.88rem; font-weight: bold; padding: 2px 9px; border-radius: 8px;
+        }
+        .status-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-bottom: 6px; }
+        .status-box {
+            background-color: var(--inner-box-bg); border-radius: 9px;
+            padding: 4px; display: flex; flex-direction: column; align-items: center;
+        }
+        .box-label { font-size: 0.55rem; font-weight: bold; color: var(--text-muted); }
+        .box-value { font-size: 1rem; font-weight: 900; }
+        .value-neutral { color: var(--text-main); }
+        .value-good { color: var(--color-good); }
+        .value-bad { color: var(--color-bad); }
+
+        .motivation-banner {
+            background-color: var(--accent-green); color: var(--text-light);
+            padding: 5px 8px; border-radius: 9px; text-align: center;
+            font-size: 0.75rem; font-style: italic;
+        }
+        .mini-progress-bar {
+            background-color: rgba(255, 255, 255, 0.2); height: 4px;
+            border-radius: 2px; width: 100%; overflow: hidden; margin-top: 3px;
+        }
+        #quiz-progress-line { background-color: var(--color-gold); height: 100%; width: 0%; }
+
+        .quiz-question-card {
+            background-color: var(--card-bg); border-radius: 14px;
+            padding: 11px; display: flex; flex-direction: column; gap: 7px;
+        }
+        .question-meta {
+            display: flex; justify-content: space-between; align-items: center;
+            font-size: 0.7rem; font-weight: bold; color: var(--text-muted);
+        }
+        .badge-qcm {
+            background-color: var(--accent-green); color: var(--text-light);
+            font-size: 0.62rem; padding: 2px 7px; border-radius: 5px;
+        }
+        .question-text { font-size: 0.96rem; font-weight: 700; color: var(--text-main); }
+        .options-list { display: flex; flex-direction: column; gap: 5px; }
+        .option-item {
+            background-color: #ffffff; border: 2px solid transparent; border-radius: 10px;
+            padding: 8px 10px; display: flex; align-items: center; gap: 8px;
+            text-align: left; width: 100%; cursor: pointer;
+        }
+        .option-item.selected { border-color: var(--accent-green); background-color: #f0eee2; }
+        .option-letter { font-size: 0.88rem; font-weight: 900; color: var(--accent-green); min-width: 16px; }
+        .option-string { font-size: 0.85rem; color: var(--text-main); font-weight: 500; }
+
+        .btn-validate-submit {
+            background-color: var(--card-bg); color: var(--accent-green);
+            border: 2px solid var(--accent-green); font-size: 0.92rem; font-weight: bold;
+            padding: 10px; border-radius: 12px; cursor: pointer; width: 100%;
+        }
+        .feedback-panel {
+            background-color: var(--inner-box-bg); border-radius: 12px; padding: 10px;
+            border-left: 5px solid var(--accent-green); display: flex; flex-direction: column; gap: 6px;
+        }
+        .btn-action-trigger {
+            background-color: var(--color-gold); color: #000; font-size: 0.9rem;
+            font-weight: bold; padding: 10px; border: none; border-radius: 12px; cursor: pointer;
+        }
+
+        .reader-header { display: flex; align-items: center; gap: 8px; }
+        .btn-back {
+            background-color: var(--card-bg); color: var(--accent-green);
+            border: none; padding: 6px 10px; border-radius: 14px; font-size: 0.78rem; font-weight: bold; cursor: pointer;
+        }
+        .progress-container { flex: 1; background-color: rgba(244, 243, 232, 0.2); height: 6px; border-radius: 4px; overflow: hidden; }
+        .progress-bar { background-color: var(--color-gold); height: 100%; width: 0%; }
+        .reader-part-indicator { color: var(--card-bg); font-weight: bold; font-size: 0.75rem; }
+        .card-content { background-color: var(--card-bg); border-radius: 16px; padding: 14px; }
+        .card-content h2 { color: var(--text-main); font-size: 1.05rem; margin-bottom: 6px; }
+        .box-tip { background: #e3ecf5; border-left: 4px solid #3182ce; padding: 8px; border-radius: 8px; margin-top: 8px; font-size: 0.85rem; }
+        .box-example { background: #edf2f7; border-left: 4px solid #4a5568; padding: 8px; border-radius: 8px; margin-top: 6px; font-size: 0.85rem; }
+        .reader-actions { display: flex; gap: 8px; }
+        .reader-actions .btn-action-trigger { flex: 1.2; }
+        .btn-action-secondary {
+            flex: 1; background-color: var(--card-bg); color: var(--accent-green);
+            font-size: 0.85rem; font-weight: bold; padding: 10px 8px;
+            border: 2px solid var(--accent-green); border-radius: 12px; cursor: pointer;
+        }
+
+        .stats-grid-dashboard { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+        .stat-card { background: var(--card-bg); padding: 9px; text-align: center; border-radius: 12px; }
+        .stat-card p { font-size: 1.1rem; font-weight: 800; }
+        .canvas-container { background: var(--card-bg); border-radius: 14px; padding: 8px; width: 100%; }
+        #stats-chart { width: 100%; height: auto; display: block; }
+        .grid-badges { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+
+        .setting-item {
+            background: var(--card-bg); padding: 11px 12px; border-radius: 12px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .setting-info { display: flex; flex-direction: column; gap: 2px; max-width: 75%; }
+        .setting-title { font-weight: bold; font-size: 0.9rem; }
+        .setting-desc { font-size: 0.75rem; color: var(--text-muted); }
+        .switch { position: relative; display: inline-block; width: 44px; height: 22px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; inset: 0; background-color: #ccc; transition: .3s; border-radius: 34px; }
+        .slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 3px; bottom: 3px; background-color: white; transition: .3s; border-radius: 50%; }
+        input:checked + .slider { background-color: var(--accent-green); }
+        input:checked + .slider:before { transform: translateX(22px); }
+        .select-custom { padding: 5px 8px; border-radius: 8px; border: 1px solid var(--inner-box-bg); background: #fff; font-weight: 600; }
+
+        .btn-admin-primary { background: #3182ce; color: white; border: none; padding: 11px; border-radius: 12px; font-weight: bold; font-size: 0.92rem; cursor: pointer; }
+        .backup-data-card { background: var(--card-bg); padding: 12px; border-radius: 14px; display: flex; flex-direction: column; gap: 6px; }
+        .backup-data-card h3 { color: var(--text-main); font-size: 0.92rem; }
+        .backup-actions-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .btn-backup-io { padding: 8px; border-radius: 8px; border: 1px dashed var(--accent-green); background: transparent; font-weight: bold; cursor: pointer; font-size: 0.8rem; }
+        .form-element { display: flex; flex-direction: column; gap: 6px; background: var(--card-bg); padding: 10px; border-radius: 12px; }
+        .form-element input, .form-element textarea { padding: 8px; border-radius: 8px; border: 1px solid #ccc; font-size: 0.88rem; width: 100%; font-family: inherit; }
+        .sub-box { background: var(--inner-box-bg); padding: 8px; border-radius: 10px; display: flex; flex-direction: column; gap: 6px; margin-top: 6px; }
+        .q-box { background: #ffffff; padding: 8px; border-radius: 8px; display: flex; flex-direction: column; gap: 5px; border: 1px solid #d5d2be; }
+        .btn-mini { padding: 6px 9px; border-radius: 8px; border: none; font-weight: bold; font-size: 0.76rem; cursor: pointer; }
+        .btn-mini-add { background: var(--accent-green); color: #fff; }
+        .btn-mini-del { background: var(--color-bad); color: #fff; }
+        .form-actions-builder { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+        .btn-builder-secondary { background: transparent; border: 1px dashed var(--card-bg); color: var(--card-bg); padding: 9px; border-radius: 12px; font-weight: bold; cursor: pointer; }
+        .btn-builder-save { background: var(--color-good); border: none; color: var(--text-light); padding: 11px; border-radius: 12px; font-weight: bold; cursor: pointer; }
+
+        .lock-screen {
+            position: fixed; inset: 0; z-index: 9999; background-color: rgba(11, 19, 14, 0.92);
+            display: flex; align-items: center; justify-content: center; padding: 16px;
+        }
+        .lock-card {
+            width: 100%; max-width: 310px; background-color: var(--card-bg); color: var(--text-main);
+            border-radius: 16px; padding: 20px 16px; text-align: center;
+        }
+        .lock-input {
+            width: 100%; padding: 9px; border-radius: 10px; border: 2px solid var(--inner-box-bg);
+            background-color: var(--inner-box-bg); color: var(--text-main); font-size: 0.95rem;
+            text-align: center; letter-spacing: 2px; margin: 10px 0;
+        }
+        .lock-modal-actions { display: flex; gap: 8px; }
+        .lock-cancel-btn { flex: 1; padding: 9px; border-radius: 10px; border: 1px solid #999; background: none; color: var(--text-main); cursor: pointer; }
+        .lock-submit-btn { flex: 1; padding: 9px; border: none; border-radius: 10px; background-color: var(--accent-green); color: #fff; font-weight: bold; cursor: pointer; }
+        .lock-status { margin-top: 8px; font-size: 0.8rem; color: var(--color-bad); }
+
+        .bottom-nav {
+            position: fixed; bottom: 0; left: 0; right: 0; height: 54px;
+            background-color: var(--card-bg); display: flex; justify-content: space-around;
+            align-items: center; border-top: 2px solid var(--inner-box-bg); z-index: 100;
+        }
+        .nav-button {
+            background: none; border: none; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; gap: 2px; color: var(--text-muted);
+            cursor: pointer; flex: 1; height: 100%;
+        }
+        .nav-icon { font-size: 1.15rem; }
+        .nav-text { font-size: 0.68rem; font-weight: bold; }
+        .nav-button.active { color: var(--accent-green); }
+    </style>
+</head>
+<body>
+    <div id="editor-code-modal" class="lock-screen hidden">
+        <div class="lock-card">
+            <div style="font-size:1.8rem;">🛠️</div>
+            <h2 style="color:var(--accent-green); font-size:1.1rem;">Mode Éditeur</h2>
+            <p style="font-size:0.8rem; color:var(--text-muted);">Code éditeur requis</p>
+            <input type="text" id="editor-code-input" class="lock-input" placeholder="CODE" autocomplete="off"
+                   onkeydown="if(event.key==='Enter') window.lock.tryEditorUnlock()">
+            <div class="lock-modal-actions">
+                <button class="lock-cancel-btn" onclick="window.lock.cancelEditorPrompt()">Annuler</button>
+                <button class="lock-submit-btn" onclick="window.lock.tryEditorUnlock()">Valider</button>
+            </div>
+            <p id="editor-code-status" class="lock-status hidden"></p>
+        </div>
+    </div>
+
+    <header class="app-header">
+        <h1 onclick="window.app.switchView('dashboard')">🧠 SmartRevision</h1>
+        <button id="toggle-mode-btn" class="btn-toggle" onclick="window.app.toggleAdminMode()">Mode Éditeur</button>
+    </header>
+
+    <main id="student-zone" class="view-zone active">
+        <section id="view-dashboard" class="app-view active">
+            <h2>📚 Mes Cours</h2>
+            <div id="courses-list" class="grid-courses"></div>
+        </section>
+
+        <section id="view-reader" class="app-view">
+            <div class="reader-header">
+                <button class="btn-back" onclick="window.app.switchView('dashboard')">⬅️ Quitter</button>
+                <div class="progress-container"><div id="reader-progress-bar" class="progress-bar"></div></div>
+                <span id="reader-part-indicator" class="reader-part-indicator">Fiche 1/1</span>
+            </div>
+            <article class="card-content">
+                <h2 id="part-title"></h2>
+                <div id="part-content"></div>
+                <div id="part-tip" class="box-tip hidden"><strong>💡 Astuce :</strong> <span id="part-tip-text"></span></div>
+                <div id="part-example" class="box-example hidden"><strong>🧪 Exemple :</strong> <span id="part-example-text"></span></div>
+            </article>
+            <div class="reader-actions">
+                <button id="btn-next-part" class="btn-action-secondary" onclick="window.app.nextPart()">➡️ Suivante</button>
+                <button class="btn-action-trigger" onclick="window.app.startQuiz()">🔥 Quiz</button>
+            </div>
+        </section>
+
+        <section id="view-quiz" class="app-view">
+            <div class="quiz-status-card">
+                <div class="status-header">
+                    <div class="participant-info">
+                        <span class="participant-name">Tt</span>
+                        <span class="participant-label">PARTICIPANT</span>
+                    </div>
+                    <div id="quiz-timer" class="status-timer">19:57</div>
+                </div>
+                <div class="status-grid">
+                    <div class="status-box"><span class="box-label">SCORE</span><span id="quiz-score" class="box-value value-neutral">0</span></div>
+                    <div class="status-box"><span class="box-label">NOTE /20</span><span id="quiz-grade" class="box-value value-neutral">0.0</span></div>
+                    <div class="status-box"><span class="box-label">BONNES</span><span id="quiz-correct" class="box-value value-good">0</span></div>
+                    <div class="status-box"><span class="box-label">FAUSSES</span><span id="quiz-wrong" class="box-value value-bad">0</span></div>
+                </div>
+                <div class="motivation-banner">
+                    <p id="quiz-motivation-text">C'est parti !</p>
+                    <div class="mini-progress-bar"><div id="quiz-progress-line"></div></div>
+                </div>
+            </div>
+
+            <div class="quiz-question-card">
+                <div class="question-meta">
+                    <span id="quiz-question-number">QUESTION 1 / 1</span>
+                    <span id="quiz-question-badge" class="badge-qcm">QCM</span>
+                    <span>⏱️ <span id="question-timer-val">37s</span></span>
+                </div>
+                <h2 id="quiz-question-text" class="question-text"></h2>
+                <div id="quiz-options-container" class="options-list"></div>
+            </div>
+
+            <div id="quiz-feedback-box" class="feedback-panel hidden">
+                <div style="display:flex; align-items:center; gap:6px;">
+                    <span id="feedback-status-icon">💡</span>
+                    <h4 id="feedback-title"></h4>
+                </div>
+                <p id="feedback-explanation" style="font-size:0.82rem;"></p>
+                <button class="btn-action-trigger" onclick="window.app.nextStep()">Continuer ➡️</button>
+            </div>
+
+            <button id="btn-validate-quiz" class="btn-validate-submit" onclick="window.app.validateAnswer()">Valider la réponse</button>
+        </section>
+
+        <section id="view-stats" class="app-view">
+            <h2>📊 Mes Statistiques</h2>
+            <div class="stats-grid-dashboard">
+                <div class="stat-card"><h4>Temps</h4><p id="stat-total-time">0 min</p></div>
+                <div class="stat-card"><h4>Réponses</h4><p id="stat-total-answers">0</p></div>
+                <div class="stat-card"><h4>Précision</h4><p id="stat-success-rate">0%</p></div>
+            </div>
+            <h3>📈 Évolution</h3>
+            <div class="canvas-container"><canvas id="stats-chart"></canvas></div>
+            <h3>🏆 Badges</h3>
+            <div id="badges-container" class="grid-badges"></div>
+        </section>
+
+        <section id="view-settings" class="app-view">
+            <h2>⚙️ Réglages</h2>
+            <div class="setting-item">
+                <div class="setting-info">
+                    <span class="setting-title">🌙 Mode Sombre</span>
+                    <span class="setting-desc">Confort de nuit</span>
+                </div>
+                <label class="switch">
+                    <input type="checkbox" id="setting-dark-mode" onchange="window.app.themeToggle(this.checked)">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="setting-item">
+                <div class="setting-info">
+                    <span class="setting-title">🔍 Taille des caractères</span>
+                    <span class="setting-desc">Ajuster la taille</span>
+                </div>
+                <select id="setting-font-size" class="select-custom" onchange="window.app.fontSizeChange(this.value)">
+                    <option value="small">Petit</option>
+                    <option value="medium" selected>Moyen</option>
+                    <option value="large">Grand</option>
+                    <option value="xlarge">Très grand</option>
+                </select>
+            </div>
+            <div class="setting-item">
+                <div class="setting-info">
+                    <span class="setting-title">📖 Police Dyslexie</span>
+                    <span class="setting-desc">Lecture facilitée</span>
+                </div>
+                <label class="switch">
+                    <input type="checkbox" id="setting-dyslexia" onchange="window.app.fontToggle(this.checked)">
+                    <span class="slider"></span>
+                </label>
+            </div>
+        </section>
+    </main>
+
+    <aside id="editor-zone" class="view-zone">
+        <section id="view-editor-dashboard" class="app-view active">
+            <h2>🛠️ Éditeur</h2>
+            <button class="btn-admin-primary" onclick="window.app.openCourseCreator()">➕ Publier une matière</button>
+            <div class="backup-data-card">
+                <h3>💾 Sauvegarde JSON</h3>
+                <div class="backup-actions-grid">
+                    <button class="btn-backup-io" onclick="window.app.exportJSON()">📤 Exporter</button>
+                    <button class="btn-backup-io" onclick="document.getElementById('import-file').click()">📥 Importer</button>
+                </div>
+                <input type="file" id="import-file" class="hidden" onchange="window.app.importJSON(event)">
+            </div>
+            <h3>Matières publiées</h3>
+            <div id="editor-courses-list"></div>
+        </section>
+
+        <section id="view-course-creator" class="app-view">
+            <div class="reader-header">
+                <button class="btn-back" onclick="window.app.switchView('editor-dashboard')">⬅️ Annuler</button>
+                <h2 id="editor-form-title">Nouvelle matière</h2>
+            </div>
+            <form onsubmit="event.preventDefault();">
+                <input type="hidden" id="editing-course-id">
+                <div class="form-element">
+                    <label style="font-weight:bold; font-size:0.85rem;">Titre de la matière :</label>
+                    <input type="text" id="input-course-title" placeholder="Ex: Pharmacologie" required>
+                </div>
+                <div id="chapters-dynamic-stack"></div>
+                <div class="form-actions-builder">
+                    <button type="button" class="btn-builder-secondary" onclick="window.app.addChapterField()">➕ Ajouter un chapitre</button>
+                    <button type="button" class="btn-builder-save" onclick="window.app.saveCreatedCourse()">💾 Enregistrer et publier</button>
+                </div>
+            </form>
+        </section>
+    </aside>
+
+    <nav class="bottom-nav">
+        <button class="nav-button active" id="nav-dashboard" onclick="window.app.switchView('dashboard')">
+            <span class="nav-icon">🏠</span>
+            <span class="nav-text">Accueil</span>
+        </button>
+        <button class="nav-button" id="nav-stats" onclick="window.app.switchView('stats')">
+            <span class="nav-icon">📊</span>
+            <span class="nav-text">Stats</span>
+        </button>
+        <button class="nav-button" id="nav-settings" onclick="window.app.switchView('settings')">
+            <span class="nav-icon">⚙️</span>
+            <span class="nav-text">Réglages</span>
+        </button>
+    </nav>
+
+    <script>
+        window.app = {
+            SHEET_WEB_APP_URL: "https://script.google.com/macros/s/AKfycbyOPc7_24OsqqFa6gHzcze4y5mxbsFNAIqyLEqBJXC58hVvd-RyyEN4Rt0BAdYwb36X/exec",
+            state: {
+                courses: [],
+                stats: { streak: 0, totalTime: 0, totalAnswers: 0, correctAnswers: 0 },
+                settings: { theme: 'light', fontSize: 'medium', dyslexia: false }
+            },
+            quiz: {
+                currentQuestions: [], currentIndex: 0, score: 0, correct: 0, wrong: 0,
+                selectedOptionIndex: null, timerInterval: null, timeLeft: 37, globalTimeLeft: 1197
+            },
+            reader: { parts: [], currentIndex: 0 },
+            currentViewZone: 'student-zone',
+
+            shuffleArray(arr) {
+                const c = [...arr];
+                for (let i = c.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [c[i], c[j]] = [c[j], c[i]];
+                }
+                return c;
+            },
+
+            getEditorCode() {
+                return sessionStorage.getItem('sr_ed_code') || '';
+            },
+
+            async init() {
+                this.loadLocalState();
+                this.applySettings();
+                this.renderDashboard();
+                this.initGlobalTimers();
+                await this.syncCoursesFromSheet();
+            },
+
+            saveLocalState() {
+                localStorage.setItem('smart_revision_data', JSON.stringify({
+                    courses: this.state.courses,
+                    stats: this.state.stats,
+                    settings: this.state.settings
+                }));
+            },
+
+            loadLocalState() {
+                try {
+                    const raw = localStorage.getItem('smart_revision_data');
+                    if (raw) {
+                        const parsed = JSON.parse(raw);
+                        this.state.courses = Array.isArray(parsed.courses) ? parsed.courses : [];
+                        this.state.stats = parsed.stats || this.state.stats;
+                        this.state.settings = parsed.settings || this.state.settings;
+                    }
+                } catch (e) {}
+            },
+
+            isSheetConfigured() {
+                return typeof this.SHEET_WEB_APP_URL === "string" &&
+                       this.SHEET_WEB_APP_URL.startsWith("https://script.google.com/macros/s/") &&
+                       !this.SHEET_WEB_APP_URL.includes("REMPLACE_PAR_TON_ID");
+            },
+
+            async syncCoursesFromSheet() {
+                if (!this.isSheetConfigured()) {
+                    this.renderDashboard();
+                    return;
+                }
+                try {
+                    const res = await fetch(`${this.SHEET_WEB_APP_URL}?t=${Date.now()}`);
+                    const data = await res.json();
+                    if (data && data.ok && Array.isArray(data.courses)) {
+                        this.state.courses = data.courses;
+                        this.saveLocalState();
+                        this.renderDashboard();
+                        if (this.currentViewZone === 'editor-zone') this.renderEditorDashboard();
+                    }
+                } catch (e) {}
+            },
+
+            async syncStatsToSheet() {
+                if (!this.isSheetConfigured()) return;
+                try {
+                    await fetch(this.SHEET_WEB_APP_URL, {
+                        method: "POST",
+                        headers: { "Content-Type": "text/plain;charset=utf-8" },
+                        body: JSON.stringify({
+                            action: "stats",
+                            studentName: "Eleve",
+                            totalTime: this.state.stats.totalTime,
+                            totalAnswers: this.state.stats.totalAnswers,
+                            correctAnswers: this.state.stats.correctAnswers
+                        })
+                    });
+                } catch (e) {}
+            },
+
+            switchView(viewId) {
+                const zone = document.getElementById(this.currentViewZone);
+                if (!zone) return;
+                zone.querySelectorAll('.app-view').forEach(v => v.classList.remove('active'));
+                const target = document.getElementById(`view-${viewId}`);
+                if (target) target.classList.add('active');
+                document.querySelectorAll('.nav-button').forEach(b => b.classList.remove('active'));
+                const nav = document.getElementById(`nav-${viewId}`);
+                if (nav) nav.classList.add('active');
+                if (viewId === 'dashboard') { this.renderDashboard(); this.syncCoursesFromSheet(); }
+                if (viewId === 'stats') this.renderStats();
+            },
+
+            renderDashboard() {
+                const container = document.getElementById('courses-list');
+                if (!container) return;
+                container.innerHTML = '';
+                if (!this.state.courses.length) {
+                    container.innerHTML = '<p style="color:#f4f3e8; text-align:center; padding:20px; font-size:0.88rem;">Aucune matière disponible.</p>';
+                    return;
+                }
+                this.state.courses.forEach(course => {
+                    const card = document.createElement('div');
+                    card.className = 'course-card';
+                    card.onclick = () => this.openReader(course.id);
+                    card.innerHTML = `
+                        <div>
+                            <h3 style="color:var(--text-main); font-weight:700; font-size:0.95rem;">${course.title}</h3>
+                            <span style="color:var(--text-muted); font-size:0.72rem; font-weight:bold;">${(course.chapters || []).length} CHAPITRE(S)</span>
+                        </div>
+                        <span style="font-size:1.1rem; color:var(--accent-green);">➡️</span>
+                    `;
+                    container.appendChild(card);
+                });
+            },
+
+            openReader(courseId) {
+                const course = this.state.courses.find(c => c.id === courseId);
+                if (!course) return;
+                this.reader.parts = [];
+                this.quiz.currentQuestions = [];
+                (course.chapters || []).forEach(ch => {
+                    (ch.parts || []).forEach(p => {
+                        this.reader.parts.push(p);
+                        if (p.questions) this.quiz.currentQuestions.push(...p.questions);
+                    });
+                });
+                if (!this.reader.parts.length) return;
+                this.switchView('reader');
+                this.renderPart(0);
+            },
+
+            renderPart(idx) {
+                this.reader.currentIndex = idx;
+                const part = this.reader.parts[idx];
+                document.getElementById('part-title').innerText = part.title;
+                document.getElementById('part-content').innerHTML = part.content;
+                const tipBox = document.getElementById('part-tip');
+                if (part.tip) { tipBox.classList.remove('hidden'); document.getElementById('part-tip-text').innerText = part.tip; }
+                else tipBox.classList.add('hidden');
+                const exBox = document.getElementById('part-example');
+                if (part.example) { exBox.classList.remove('hidden'); document.getElementById('part-example-text').innerText = part.example; }
+                else exBox.classList.add('hidden');
+                document.getElementById('reader-part-indicator').innerText = `Fiche ${idx + 1}/${this.reader.parts.length}`;
+                document.getElementById('reader-progress-bar').style.width = `${((idx + 1) / this.reader.parts.length) * 100}%`;
+            },
+
+            nextPart() {
+                this.renderPart((this.reader.currentIndex + 1) % this.reader.parts.length);
+            },
+
+            startQuiz() {
+                if (!this.quiz.currentQuestions.length) { alert("Aucune question pour cette matière."); return; }
+                this.quiz.currentQuestions = this.shuffleArray(this.quiz.currentQuestions).map(q => {
+                    const correctText = q.options[q.answer];
+                    const opts = this.shuffleArray(q.options);
+                    return { ...q, options: opts, answer: Math.max(0, opts.indexOf(correctText)) };
+                });
+                this.quiz.currentIndex = 0; this.quiz.score = 0; this.quiz.correct = 0; this.quiz.wrong = 0;
+                this.switchView('quiz');
+                this.showQuestion();
+            },
+
+            showQuestion() {
+                document.getElementById('quiz-feedback-box').classList.add('hidden');
+                document.getElementById('btn-validate-quiz').classList.remove('hidden');
+                const q = this.quiz.currentQuestions[this.quiz.currentIndex];
+                document.getElementById('quiz-question-number').innerText = `QUESTION ${this.quiz.currentIndex + 1} / ${this.quiz.currentQuestions.length}`;
+                document.getElementById('quiz-question-text').innerText = q.question;
+                document.getElementById('quiz-score').innerText = this.quiz.score;
+                document.getElementById('quiz-correct').innerText = this.quiz.correct;
+                document.getElementById('quiz-wrong').innerText = this.quiz.wrong;
+                document.getElementById('quiz-grade').innerText = ((this.quiz.correct / this.quiz.currentQuestions.length) * 20).toFixed(1);
+                document.getElementById('quiz-progress-line').style.width = `${(this.quiz.currentIndex / this.quiz.currentQuestions.length) * 100}%`;
+                this.quiz.timeLeft = 37;
+                document.getElementById('question-timer-val').innerText = "37s";
+                clearInterval(this.quiz.timerInterval);
+                this.quiz.timerInterval = setInterval(() => {
+                    this.quiz.timeLeft--;
+                    document.getElementById('question-timer-val').innerText = `${this.quiz.timeLeft}s`;
+                    if (this.quiz.timeLeft <= 0) { clearInterval(this.quiz.timerInterval); this.validateAnswer(true); }
+                }, 1000);
+                const container = document.getElementById('quiz-options-container');
+                container.innerHTML = '';
+                this.quiz.selectedOptionIndex = null;
+                const letters = ['A', 'B', 'C', 'D'];
+                q.options.forEach((opt, i) => {
+                    const btn = document.createElement('button');
+                    btn.className = 'option-item';
+                    btn.innerHTML = `<span class="option-letter">${letters[i]}</span><span class="option-string">${opt}</span>`;
+                    btn.onclick = () => {
+                        this.quiz.selectedOptionIndex = i;
+                        container.querySelectorAll('.option-item').forEach(el => el.classList.remove('selected'));
+                        btn.classList.add('selected');
+                    };
+                    container.appendChild(btn);
+                });
+            },
+
+            validateAnswer(timeout = false) {
+                clearInterval(this.quiz.timerInterval);
+                if (this.quiz.selectedOptionIndex === null && !timeout) { alert("Choisissez une réponse."); return; }
+                const q = this.quiz.currentQuestions[this.quiz.currentIndex];
+                document.getElementById('btn-validate-quiz').classList.add('hidden');
+                document.getElementById('quiz-feedback-box').classList.remove('hidden');
+                this.state.stats.totalAnswers++;
+                const ok = !timeout && this.quiz.selectedOptionIndex === q.answer;
+                if (ok) {
+                    this.quiz.correct++; this.quiz.score += 40; this.state.stats.correctAnswers++;
+                    document.getElementById('feedback-status-icon').innerText = "🎉";
+                    document.getElementById('feedback-title').innerText = "Bonne réponse !";
+                    document.getElementById('quiz-motivation-text').innerText = "Bien joué !";
+                } else {
+                    this.quiz.wrong++;
+                    document.getElementById('feedback-status-icon').innerText = "💡";
+                    document.getElementById('feedback-title').innerText = timeout ? "Temps écoulé" : "À revoir";
+                    document.getElementById('quiz-motivation-text').innerText = "Continue !";
+                }
+                document.getElementById('feedback-explanation').innerText = q.explanation;
+                document.getElementById('quiz-score').innerText = this.quiz.score;
+                document.getElementById('quiz-correct').innerText = this.quiz.correct;
+                document.getElementById('quiz-wrong').innerText = this.quiz.wrong;
+                document.getElementById('quiz-grade').innerText = ((this.quiz.correct / this.quiz.currentQuestions.length) * 20).toFixed(1);
+                this.saveLocalState();
+            },
+
+            nextStep() {
+                this.quiz.currentIndex++;
+                if (this.quiz.currentIndex < this.quiz.currentQuestions.length) this.showQuestion();
+                else {
+                    // Stats locales uniquement
+                    alert(`Note finale : ${document.getElementById('quiz-grade').innerText}/20`);
+                    this.switchView('dashboard');
+                }
+            },
+
+            initGlobalTimers() {
+                setInterval(() => {
+                    const el = document.getElementById('quiz-timer');
+                    if (el && document.getElementById('view-quiz').classList.contains('active')) {
+                        this.quiz.globalTimeLeft = Math.max(1, this.quiz.globalTimeLeft - 1);
+                        const m = Math.floor(this.quiz.globalTimeLeft / 60);
+                        const s = this.quiz.globalTimeLeft % 60;
+                        el.innerText = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+                    }
+                }, 1000);
+            },
+
+            renderStats() {
+                document.getElementById('stat-total-time').innerText = `${this.state.stats.totalTime} min`;
+                document.getElementById('stat-total-answers').innerText = this.state.stats.totalAnswers;
+                const rate = this.state.stats.totalAnswers > 0 ? Math.round((this.state.stats.correctAnswers / this.state.stats.totalAnswers) * 100) : 0;
+                document.getElementById('stat-success-rate').innerText = `${rate}%`;
+                const canvas = document.getElementById('stats-chart');
+                if (canvas) {
+                    const ctx = canvas.getContext('2d');
+                    canvas.width = canvas.parentElement.clientWidth || 300;
+                    canvas.height = 110;
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    ctx.strokeStyle = '#173f27'; ctx.lineWidth = 3;
+                    ctx.beginPath(); ctx.moveTo(0, canvas.height - 10);
+                    ctx.lineTo(canvas.width, canvas.height - Math.max(15, (rate / 100) * (canvas.height - 20)));
+                    ctx.stroke();
+                }
+                document.getElementById('badges-container').innerHTML = `
+                    <div class="stat-card">🔥 <h4>Série</h4></div>
+                    <div class="stat-card">📝 <h4>Quiz</h4></div>
+                    <div class="stat-card">🎓 <h4>${rate}%</h4></div>
+                `;
+            },
+
+            themeToggle(isDark) {
+                document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+                this.state.settings.theme = isDark ? 'dark' : 'light';
+                this.saveLocalState();
+            },
+            fontSizeChange(size) {
+                document.documentElement.setAttribute('data-size', size);
+                this.state.settings.fontSize = size;
+                this.saveLocalState();
+            },
+            fontToggle(isDys) {
+                document.documentElement.setAttribute('data-font', isDys ? 'dyslexic' : 'standard');
+                this.state.settings.dyslexia = isDys;
+                this.saveLocalState();
+            },
+            applySettings() {
+                this.themeToggle(this.state.settings.theme === 'dark');
+                this.fontSizeChange(this.state.settings.fontSize);
+                this.fontToggle(this.state.settings.dyslexia);
+                document.getElementById('setting-dark-mode').checked = this.state.settings.theme === 'dark';
+                document.getElementById('setting-font-size').value = this.state.settings.fontSize;
+                document.getElementById('setting-dyslexia').checked = this.state.settings.dyslexia;
+            },
+
+            toggleAdminMode() {
+                const sz = document.getElementById('student-zone');
+                const ez = document.getElementById('editor-zone');
+                const btn = document.getElementById('toggle-mode-btn');
+                if (this.currentViewZone === 'student-zone') {
+                    sz.classList.remove('active'); ez.classList.add('active');
+                    this.currentViewZone = 'editor-zone'; btn.innerText = "Mode Étudiant";
+                    this.switchView('editor-dashboard'); this.renderEditorDashboard(); this.syncCoursesFromSheet();
+                } else {
+                    ez.classList.remove('active'); sz.classList.add('active');
+                    this.currentViewZone = 'student-zone'; btn.innerText = "Mode Éditeur";
+                    this.switchView('dashboard');
+                }
+            },
+
+            async postToSheet(payload) {
+                if (!this.isSheetConfigured()) throw new Error("URL Google Sheets non configurée.");
+                const res = await fetch(this.SHEET_WEB_APP_URL, {
+                    method: "POST",
+                    headers: { "Content-Type": "text/plain;charset=utf-8" },
+                    body: JSON.stringify({ ...payload, code: this.getEditorCode() })
+                });
+                const json = await res.json();
+                if (!json || !json.ok) throw new Error((json && json.error) || "Erreur serveur.");
+                return json;
+            },
+
+            renderEditorDashboard() {
+                const list = document.getElementById('editor-courses-list');
+                if (!list) return;
+                list.innerHTML = '';
+                if (!this.state.courses.length) {
+                    list.innerHTML = '<p style="color:var(--text-muted); text-align:center;">Aucune matière.</p>';
+                    return;
+                }
+                this.state.courses.forEach(c => {
+                    const row = document.createElement('div');
+                    row.className = 'course-card';
+                    row.style.background = 'var(--inner-box-bg)';
+                    row.style.marginBottom = '6px';
+                    row.innerHTML = `
+                        <div><strong style="color:var(--text-main);">${c.title}</strong></div>
+                        <div style="display:flex; gap:8px;">
+                            <button onclick="window.app.editCourse('${c.id}')" style="background:none; border:none; color:var(--accent-green); font-weight:bold; cursor:pointer;">Modifier</button>
+                            <button onclick="window.app.deleteCourse('${c.id}')" style="background:none; border:none; color:var(--color-bad); font-weight:bold; cursor:pointer;">Supprimer</button>
+                        </div>
+                    `;
+                    list.appendChild(row);
+                });
+            },
+
+            openCourseCreator(existingCourse = null) {
+                this.switchView('course-creator');
+                const stack = document.getElementById('chapters-dynamic-stack');
+                stack.innerHTML = '';
+                document.getElementById('editing-course-id').value = existingCourse ? existingCourse.id : '';
+                document.getElementById('editor-form-title').innerText = existingCourse ? "Modifier la matière" : "Nouvelle matière";
+                document.getElementById('input-course-title').value = existingCourse ? existingCourse.title : '';
+
+                if (existingCourse && Array.isArray(existingCourse.chapters) && existingCourse.chapters.length) {
+                    existingCourse.chapters.forEach(ch => this.addChapterField(ch));
+                } else {
+                    this.addChapterField();
+                }
+            },
+
+            editCourse(courseId) {
+                const course = this.state.courses.find(c => c.id === courseId);
+                if (!course) return;
+                this.openCourseCreator(course);
+            },
+
+            createQuestionBox(q = null) {
+                const div = document.createElement('div');
+                div.className = 'q-box';
+                const correctOpt = q && Array.isArray(q.options) ? (q.options[q.answer] || '') : '';
+                const otherOpts = q && Array.isArray(q.options) ? q.options.filter((_, idx) => idx !== q.answer) : [];
+                div.innerHTML = `
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <strong style="font-size:0.78rem;">Question QCM</strong>
+                        <button type="button" class="btn-mini btn-mini-del" onclick="this.parentElement.parentElement.remove()">✕</button>
+                    </div>
+                    <input type="text" class="input-q-text" placeholder="Énoncé de la question" value="${q ? (q.question || '').replace(/"/g, '&quot;') : ''}" required>
+                    <input type="text" class="input-q-opt1" placeholder="Bonne réponse" value="${correctOpt.replace(/"/g, '&quot;')}" required>
+                    <input type="text" class="input-q-opt2" placeholder="Mauvaise réponse 1" value="${(otherOpts[0] || '').replace(/"/g, '&quot;')}" required>
+                    <input type="text" class="input-q-opt3" placeholder="Mauvaise réponse 2" value="${(otherOpts[1] || '').replace(/"/g, '&quot;')}" required>
+                    <input type="text" class="input-q-explanation" placeholder="Explication" value="${q ? (q.explanation || '').replace(/"/g, '&quot;') : ''}" required>
+                `;
+                return div;
+            },
+
+            createPartBox(part = null) {
+                const div = document.createElement('div');
+                div.className = 'sub-box';
+                div.innerHTML = `
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <strong style="font-size:0.82rem; color:var(--accent-green);">Sous-partie</strong>
+                        <button type="button" class="btn-mini btn-mini-del" onclick="this.parentElement.parentElement.remove()">Suppr. partie</button>
+                    </div>
+                    <input type="text" class="input-part-title" placeholder="Titre de la fiche" value="${part ? (part.title || '').replace(/"/g, '&quot;') : ''}" required>
+                    <textarea class="input-part-content" placeholder="Contenu du cours" style="height:68px;" required>${part ? (part.content || '') : ''}</textarea>
+                    <input type="text" class="input-part-tip" placeholder="Astuce (optionnel)" value="${part ? (part.tip || '').replace(/"/g, '&quot;') : ''}">
+                    <input type="text" class="input-part-example" placeholder="Exemple (optionnel)" value="${part ? (part.example || '').replace(/"/g, '&quot;') : ''}">
+                    <div class="questions-stack" style="display:flex; flex-direction:column; gap:6px;"></div>
+                    <button type="button" class="btn-mini btn-mini-add" onclick="window.app.addQuestionToPart(this)">➕ Question</button>
+                `;
+                const qStack = div.querySelector('.questions-stack');
+                if (part && Array.isArray(part.questions) && part.questions.length) {
+                    part.questions.forEach(q => qStack.appendChild(this.createQuestionBox(q)));
+                } else {
+                    qStack.appendChild(this.createQuestionBox());
+                }
+                return div;
+            },
+
+            addQuestionToPart(btnEl) {
+                const partBox = btnEl.closest('.sub-box');
+                partBox.querySelector('.questions-stack').appendChild(this.createQuestionBox());
+            },
+
+            addPartToChapter(btnEl) {
+                const chapBox = btnEl.closest('.form-element');
+                chapBox.querySelector('.parts-stack').appendChild(this.createPartBox());
+            },
+
+            addChapterField(existingChapter = null) {
+                const stack = document.getElementById('chapters-dynamic-stack');
+                const idx = stack.children.length + 1;
+                const box = document.createElement('div');
+                box.className = 'form-element';
+                box.style.marginTop = '8px';
+                box.innerHTML = `
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <strong>Chapitre ${idx}</strong>
+                        <button type="button" class="btn-mini btn-mini-del" onclick="this.parentElement.parentElement.remove()">Suppr. chapitre</button>
+                    </div>
+                    <input type="text" class="input-chap-title" placeholder="Titre du chapitre" value="${existingChapter ? (existingChapter.title || '').replace(/"/g, '&quot;') : ''}" required>
+                    <div class="parts-stack"></div>
+                    <button type="button" class="btn-mini btn-mini-add" onclick="window.app.addPartToChapter(this)">➕ Sous-partie</button>
+                `;
+                const pStack = box.querySelector('.parts-stack');
+                if (existingChapter && Array.isArray(existingChapter.parts) && existingChapter.parts.length) {
+                    existingChapter.parts.forEach(p => pStack.appendChild(this.createPartBox(p)));
+                } else {
+                    pStack.appendChild(this.createPartBox());
+                }
+                stack.appendChild(box);
+            },
+
+            async saveCreatedCourse() {
+                const title = document.getElementById('input-course-title').value.trim();
+                const existingId = document.getElementById('editing-course-id').value.trim();
+                if (!title) { alert("Titre requis."); return; }
+                const chapters = [];
+                let ok = true;
+
+                document.querySelectorAll('#chapters-dynamic-stack > .form-element').forEach((b, cIdx) => {
+                    const chapTitle = b.querySelector('.input-chap-title').value.trim();
+                    if (!chapTitle) { ok = false; return; }
+                    const parts = [];
+                    b.querySelectorAll('.parts-stack > .sub-box').forEach((pb, pIdx) => {
+                        const partTitle = pb.querySelector('.input-part-title').value.trim();
+                        const partContent = pb.querySelector('.input-part-content').value.trim();
+                        const partTip = pb.querySelector('.input-part-tip').value.trim();
+                        const partExample = pb.querySelector('.input-part-example').value.trim();
+                        if (!partTitle || !partContent) { ok = false; return; }
+
+                        const questions = [];
+                        pb.querySelectorAll('.questions-stack > .q-box').forEach(qb => {
+                            const qText = qb.querySelector('.input-q-text').value.trim();
+                            const o1 = qb.querySelector('.input-q-opt1').value.trim();
+                            const o2 = qb.querySelector('.input-q-opt2').value.trim();
+                            const o3 = qb.querySelector('.input-q-opt3').value.trim();
+                            const exp = qb.querySelector('.input-q-explanation').value.trim();
+                            if (!qText || !o1 || !o2 || !exp) { ok = false; return; }
+                            const opts = this.shuffleArray([o1, o2, o3].filter(Boolean));
+                            questions.push({
+                                type: "QCM",
+                                question: qText,
+                                options: opts,
+                                answer: Math.max(0, opts.indexOf(o1)),
+                                explanation: exp
+                            });
+                        });
+                        if (!questions.length) { ok = false; return; }
+                        parts.push({
+                            id: `part_${cIdx}_${pIdx}_${Date.now()}`,
+                            title: partTitle,
+                            content: partContent,
+                            tip: partTip,
+                            example: partExample,
+                            questions
+                        });
+                    });
+                    if (!parts.length) { ok = false; return; }
+                    chapters.push({
+                        id: `chap_${cIdx}_${Date.now()}`,
+                        title: chapTitle,
+                        parts
+                    });
+                });
+
+                if (!ok || !chapters.length) { alert("Remplissez tous les champs obligatoires."); return; }
+                const course = { id: existingId || ("cours_" + Date.now()), title, chapters };
+                try {
+                    await this.postToSheet({ action: "publish", course });
+                    await this.syncCoursesFromSheet();
+                    alert("Matière enregistrée et publiée !");
+                    this.toggleAdminMode();
+                } catch (e) {
+                    alert("Erreur : " + e.message);
+                }
+            },
+
+            async deleteCourse(courseId) {
+                if (!confirm("Supprimer définitivement cette matière ?")) return;
+                try {
+                    await this.postToSheet({ action: "delete", courseId });
+                    this.state.courses = this.state.courses.filter(c => c.id !== courseId);
+                    this.saveLocalState();
+                    this.renderEditorDashboard();
+                    this.renderDashboard();
+                } catch (e) {
+                    alert("Erreur : " + e.message);
+                }
+            },
+
+            exportJSON() {
+                const str = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(this.state.courses));
+                const a = document.createElement('a');
+                a.href = str; a.download = "SmartRevision_Matieres.json";
+                document.body.appendChild(a); a.click(); a.remove();
+            },
+
+            importJSON(ev) {
+                const file = ev.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = async (e) => {
+                    try {
+                        const arr = JSON.parse(e.target.result);
+                        if (!Array.isArray(arr)) { alert("JSON invalide."); return; }
+                        for (const item of arr) {
+                            if (item && item.title) {
+                                await this.postToSheet({
+                                    action: "publish",
+                                    course: { ...item, id: item.id || ("cours_" + Date.now() + "_" + Math.random().toString(36).slice(2, 5)) }
+                                });
+                            }
+                        }
+                        await this.syncCoursesFromSheet();
+                        this.renderEditorDashboard();
+                        alert("Importé !");
+                    } catch (err) { alert("Erreur : " + err.message); }
+                };
+                reader.readAsText(file);
+            }
+        };
+
+        window.lock = {
+            init() {
+                const orig = window.app.toggleAdminMode.bind(window.app);
+                window.app.toggleAdminMode = () => {
+                    if (window.app.currentViewZone === 'student-zone' && sessionStorage.getItem('sr_ed_ok') !== '1') {
+                        document.getElementById('editor-code-modal').classList.remove('hidden');
+                        const inp = document.getElementById('editor-code-input');
+                        inp.value = ''; inp.focus();
+                        return;
+                    }
+                    orig();
+                };
+            },
+            cancelEditorPrompt() {
+                document.getElementById('editor-code-modal').classList.add('hidden');
+                document.getElementById('editor-code-status').classList.add('hidden');
+            },
+            tryEditorUnlock() {
+                const code = document.getElementById('editor-code-input').value.trim().toUpperCase();
+                if (!code) return;
+                sessionStorage.setItem('sr_ed_ok', '1');
+                sessionStorage.setItem('sr_ed_code', code);
+                this.cancelEditorPrompt();
+                window.app.toggleAdminMode();
+            }
+        };
+
+        document.addEventListener("DOMContentLoaded", () => {
+            window.lock.init();
+            window.app.init();
+        });
+    </script>
+</body>
+</html>
